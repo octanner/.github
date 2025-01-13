@@ -1,8 +1,7 @@
 # Java PR Checklist
 
-TODO: Please ensure your pull request adheres to the following guidelines:
+Note: this is for testing purposes only. We have to come up with a better checklist for Java PRs.
 
-```markdown
 - [ ] The code compiles without errors.
 - [ ] All tests pass.
 - [ ] Code is properly formatted.
@@ -11,4 +10,3 @@ TODO: Please ensure your pull request adheres to the following guidelines:
 - [ ] Changes are backward-compatible.
 - [ ] Code follows the project's coding standards.
 - [ ] Commit messages are clear and descriptive.
-```
