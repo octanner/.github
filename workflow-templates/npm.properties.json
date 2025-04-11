@@ -1,6 +1,6 @@
 {
   "name": "NPM Starter Template",
   "description": "Starter template for NPM projects",
-  "iconName": "npm.svg",
+  "iconName": "npm",
   "categories": ["JavaScript"]
 }
