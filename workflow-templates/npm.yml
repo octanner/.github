@@ -28,7 +28,7 @@ jobs:
           node-version: "24"
 
       - name: Install dependencies
-        run: npm install --nofund
+        run: npm install --nofund # don not use `clean install` as it wipes out the cache-action
 
       - name: Run tests
         run: npm run test
