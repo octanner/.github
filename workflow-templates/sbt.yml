@@ -22,10 +22,10 @@ jobs:
       - name: Checkout Code
         uses: actions/checkout@v4
 
-      - name: Cache Maven
+      - name: Cache Sbt
         uses: octanner/cache-action@v1
         with:
-          package-manager: "maven"
+          package-manager: "sbt"
 
       - name: Setup Java
         uses: actions/setup-java@v4
@@ -33,32 +33,18 @@ jobs:
           distribution: "corretto"
           java-version: "21"
 
+      - name: Setup Sbt
+        uses: sbt/setup-sbt@v1
+
       # Use a dedicate step for installing dependencies
       # This makes troubleshooting caching easier
-      - name: Install Dependencies
-        run: mvn dependency:go-offline -s settings.xml
+      - name: Download Dependencies
+        run: sbt update
 
       - name: Run Tests and Generate Coverage Report
-        run: mvn package -s settings.xml
-
-      - name: Upload Surefire Reports
-        uses: actions/upload-artifact@v4
-        with:
-          name: surefire-reports
-          path: target/surefire-reports/
-          retention-days: 1
-          overwrite: true
-
-      - name: Upload Jacoco Results
-        uses: actions/upload-artifact@v4
-        with:
-          name: jacoco
-          path: target/site/jacoco/
-          retention-days: 1
-          overwrite: true
+        run: sbt coverage test coverageReport
 
       - name: Upload Coverage to Codacy
         uses: codacy/codacy-coverage-reporter-action@v1
         with:
           api-token: ${{ secrets.CODACY_API_TOKEN }}
-          coverage-reports: target/site/jacoco/jacoco.xml
