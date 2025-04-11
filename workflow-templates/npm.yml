@@ -1,0 +1,42 @@
+name: "CI"
+
+on:
+  pull_request:
+    branches: [$default-branch]
+  push:
+    branches: [$default-branch]
+
+concurrency:
+  group: "${{ github.workflow }}-${{ github.ref }}"
+  cancel-in-progress: ${{ github.event_name == 'pull_request' }}
+
+jobs:
+  ci:
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout code
+        uses: actions/checkout@v4
+
+      - name: Cache NPM
+        uses: octanner/cache-action@v1
+        with:
+          package-manager: "npm"
+
+      - name: Setup Node
+        uses: actions/setup-node@v4
+        with:
+          node-version: "24"
+
+      - name: Install dependencies
+        run: npm install --nofund
+
+      - name: Run tests
+        run: npm run test
+
+      - name: Upload Test Results
+        uses: actions/upload-artifact@v4
+        with:
+          name: junit
+          path: reports/junit/
+          retention-days: 1
+          overwrite: true
