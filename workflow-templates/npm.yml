@@ -32,11 +32,3 @@ jobs:
 
       - name: Run tests
         run: npm run test
-
-      - name: Upload Test Results
-        uses: actions/upload-artifact@v4
-        with:
-          name: junit
-          path: reports/junit/
-          retention-days: 1
-          overwrite: true
