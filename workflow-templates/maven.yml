@@ -1,0 +1,64 @@
+name: "CI"
+
+on:
+  pull_request:
+    branches: [$default-branch]
+  push:
+    branches: [$default-branch]
+
+concurrency:
+  group: "${{ github.workflow }}-${{ github.ref }}"
+  cancel-in-progress: ${{ github.event_name == 'pull_request' }}
+
+jobs:
+  ci:
+    runs-on: ubuntu-latest
+
+    env:
+      OCT_VAULT_SHARED_READ_ARTIFACTORY_PASSWORD: ${{ secrets.OCT_VAULT_SHARED_READ_ARTIFACTORY_PASSWORD }}
+      OCT_VAULT_SHARED_READ_ARTIFACTORY_USERNAME: ${{ secrets.OCT_VAULT_SHARED_READ_ARTIFACTORY_USERNAME }}
+
+    steps:
+      - name: Checkout Code
+        uses: actions/checkout@v4
+
+      - name: Cache Maven
+        uses: octanner/cache-action@v1
+        with:
+          package-manager: "maven"
+
+      - name: Setup Java
+        uses: actions/setup-java@v4
+        with:
+          distribution: "corretto"
+          java-version: "21"
+
+      # Use a dedicate step for installing dependencies
+      # This makes troubleshooting caching easier
+      - name: Install Dependencies
+        run: mvn dependency:go-offline -s settings.xml
+
+      - name: Maven Package
+        run: mvn package -s settings.xml
+
+      - name: Upload Surefire Reports
+        uses: actions/upload-artifact@v4
+        with:
+          name: surefire-reports
+          path: target/surefire-reports/
+          retention-days: 1
+          overwrite: true
+
+      - name: Upload Jacoco Results
+        uses: actions/upload-artifact@v4
+        with:
+          name: jacoco
+          path: target/site/jacoco/
+          retention-days: 1
+          overwrite: true
+
+      - name: Upload coverage to Codacy
+        uses: codacy/codacy-coverage-reporter-action@v1
+        with:
+          api-token: ${{ secrets.CODACY_API_TOKEN }}
+          coverage-reports: target/site/jacoco/jacoco.xml

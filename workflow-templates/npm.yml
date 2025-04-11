@@ -13,8 +13,9 @@ concurrency:
 jobs:
   ci:
     runs-on: ubuntu-latest
+
     steps:
-      - name: Checkout code
+      - name: Checkout Code
         uses: actions/checkout@v4
 
       - name: Cache NPM
@@ -27,8 +28,10 @@ jobs:
         with:
           node-version: "24"
 
-      - name: Install dependencies
-        run: npm install --nofund # don not use `clean install` as it wipes out the cache-action
+      # Use a dedicate step for installing dependencies
+      # This makes troubleshooting caching easier
+      - name: Install Dependencies
+        run: npm install --nofund # DO NOT use `clean install` as it wipes out the cache-action
 
-      - name: Run tests
+      - name: Run Tests
         run: npm run test
