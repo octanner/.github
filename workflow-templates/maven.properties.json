@@ -1,0 +1,6 @@
+{
+  "name": "Maven Starter Template",
+  "description": "Starter template for Maven projects",
+  "iconName": "maven",
+  "categories": ["Java"]
+}

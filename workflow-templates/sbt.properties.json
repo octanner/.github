@@ -1,0 +1,6 @@
+{
+  "name": "Sbt Starter Template",
+  "description": "Starter template for Sbt projects",
+  "iconName": "sbt",
+  "categories": ["Java"]
+}

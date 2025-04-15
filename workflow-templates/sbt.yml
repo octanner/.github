@@ -1,0 +1,50 @@
+name: "CI"
+
+on:
+  pull_request:
+    branches: [$default-branch]
+  push:
+    branches: [$default-branch]
+
+concurrency:
+  group: "${{ github.workflow }}-${{ github.ref }}"
+  cancel-in-progress: ${{ github.event_name == 'pull_request' }}
+
+jobs:
+  ci:
+    runs-on: ubuntu-latest
+
+    env:
+      OCT_VAULT_SHARED_READ_ARTIFACTORY_PASSWORD: ${{ secrets.OCT_VAULT_SHARED_READ_ARTIFACTORY_PASSWORD }}
+      OCT_VAULT_SHARED_READ_ARTIFACTORY_USERNAME: ${{ secrets.OCT_VAULT_SHARED_READ_ARTIFACTORY_USERNAME }}
+
+    steps:
+      - name: Checkout Code
+        uses: actions/checkout@v4
+
+      - name: Cache Sbt
+        uses: octanner/cache-action@v1
+        with:
+          package-manager: "sbt"
+
+      - name: Setup Java
+        uses: actions/setup-java@v4
+        with:
+          distribution: "corretto"
+          java-version: "21"
+
+      - name: Setup Sbt
+        uses: sbt/setup-sbt@v1
+
+      # Use a dedicate step for installing dependencies
+      # This makes troubleshooting caching easier
+      - name: Download Dependencies
+        run: sbt update
+
+      - name: Run Tests and Generate Coverage Report
+        run: sbt coverage test coverageReport
+
+      - name: Upload Coverage to Codacy
+        uses: codacy/codacy-coverage-reporter-action@v1
+        with:
+          api-token: ${{ secrets.CODACY_API_TOKEN }}
