@@ -1,0 +1,101 @@
+name: "CI"
+
+on:
+  pull_request:
+    branches: [$default-branch]
+  push:
+    branches: [$default-branch]
+
+concurrency:
+  group: "${{ github.workflow }}-${{ github.ref }}"
+  cancel-in-progress: ${{ github.event_name == 'pull_request' }}
+
+jobs:
+  ci:
+    runs-on: ubuntu-latest
+
+    env:
+      RACK_ENV: test
+      RAILS_ENV: test
+
+    services:
+      postgres:
+        image: postgres:14-alpine
+        env:
+          POSTGRES_USER: root
+          POSTGRES_HOST_AUTH_METHOD: trust
+          POSTGRES_DB: postgres
+        # Set health checks to wait until postgres has started
+        options: >-
+          --health-cmd pg_isready
+          --health-interval 10s
+          --health-timeout 5s
+          --health-retries 5
+        ports:
+          - 5432:5432
+
+    steps:
+      - name: Checkout Code
+        uses: actions/checkout@v4
+
+      - name: Cache NPM
+        uses: octanner/cache-action@v1
+        with:
+          package-manager: "bundler"
+
+      - name: Setup Ruby
+        uses: ruby/setup-ruby@v1
+        with:
+          ruby-version: "3.3"
+
+      - name: Configure Bundler
+        run: |
+          bundle config --local deployment true
+          bundle config --local path vendor/bundle
+
+      # Use a dedicate step for installing dependencies
+      # This makes troubleshooting caching easier
+      - name: Install Dependencies
+        run: bundle install
+
+      - name: bundler-audit
+        run: bundle exec bundler-ad
+
+      - name: brakeman
+        run: bundle exec brakeman
+
+      - name: rubocop
+        run: bundle exec rubocop
+
+      - name: reek
+        run: bundle exec reek
+
+      - name: Setup Database
+        run: bin/rake db:setup
+
+      - name: rspec
+        run: |
+          mkdir results
+          bundle exec rspec --format progress --format RspecJunitFormatter --out results/rspec.xml
+
+      - name: Uploading Artifacts - results
+        uses: actions/upload-artifact@v4
+        with:
+          name: results
+          path: results
+          retention-days: 1
+          overwrite: true
+
+      - name: Uploading Artifacts - coverage
+        uses: actions/upload-artifact@v4
+        with:
+          name: coverage
+          path: coverage
+          retention-days: 1
+          overwrite: true
+
+      - name: Upload Coverage to Codacy
+        uses: codacy/codacy-coverage-reporter-action@v1
+        with:
+          project-token: ${{ secrets.CODACY_PROJECT_TOKEN }}
+          coverage-reports: results/rspec.xml
