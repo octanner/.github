@@ -1,0 +1,6 @@
+{
+  "name": "Bundler Starter Template",
+  "description": "Starter template for Bundler projects",
+  "iconName": "bundler",
+  "categories": ["Ruby"]
+}

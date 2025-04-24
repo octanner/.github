@@ -11,12 +11,50 @@ concurrency:
   cancel-in-progress: ${{ github.event_name == 'pull_request' }}
 
 jobs:
-  ci:
+  graphql:
+    runs-on: ubuntu-latest
+
+    steps:
+      - uses: actions/checkout@v4
+
+      - name: Check the subgraph against the graphql-gateway
+        uses: octanner/graphqlgateway-actions/subgraph-check@v1
+        with:
+          apollo-key: "${{ secrets.OCT_VAULT_APOLLOSTUDIO_CCGATEWAY_KEY }}"
+          schema-file: "./src/main/resources/graphql/schema.graphqls"
+          subgraph-name: ""
+
+  build:
     runs-on: ubuntu-latest
 
     env:
       OCT_VAULT_SHARED_READ_ARTIFACTORY_PASSWORD: ${{ secrets.OCT_VAULT_SHARED_READ_ARTIFACTORY_PASSWORD }}
       OCT_VAULT_SHARED_READ_ARTIFACTORY_USERNAME: ${{ secrets.OCT_VAULT_SHARED_READ_ARTIFACTORY_USERNAME }}
+
+    services:
+      postgres:
+        image: postgres:16-alpine
+        env:
+          POSTGRES_HOST_AUTH_METHOD: trust
+          POSTGRES_USER: postgres
+        # Set health checks to wait until postgres has started
+        options: >-
+          --health-cmd pg_isready
+          --health-interval 10s
+          --health-timeout 5s
+          --health-retries 5
+        ports:
+          - 5432:5432
+      redis:
+        image: redis:5-alpine
+        # Set health check to wait until redis has started
+        options: >-
+          --health-cmd "redis-cli ping"
+          --health-interval 10s
+          --health-timeout 5s
+          --health-retries 5
+        ports:
+          - 6379:6379
 
     steps:
       - name: Checkout Code
@@ -36,7 +74,32 @@ jobs:
       # Use a dedicate step for installing dependencies
       # This makes troubleshooting caching easier
       - name: Install Dependencies
-        run: gradle dependencies
+        run: ./gradlew dependencies
 
-      - name: Run Tests and Generate Coverage Report
-        run: gradle test
+      - name: Run Tests
+        run: ./gradlew test
+
+      - name: Generate Coverage
+        run: ./gradlew jacocoTestReport
+
+      - name: Uploading Artifacts - tests
+        uses: actions/upload-artifact@v4
+        with:
+          name: tests
+          path: build/reports/tests/test
+          retention-days: 1
+          overwrite: true
+
+      - name: Uploading Artifacts - jacoco
+        uses: actions/upload-artifact@v4
+        with:
+          name: jacoco
+          path: build/reports/jacoco/test/html
+          retention-days: 1
+          overwrite: true
+
+      - name: Upload Coverage to Codacy
+        uses: codacy/codacy-coverage-reporter-action@v1
+        with:
+          project-token: ${{ secrets.CODACY_PROJECT_TOKEN }}
+          coverage-reports: build/jacocoReports/coverageReport/jacocoTestReport.xml

@@ -11,7 +11,7 @@ concurrency:
   cancel-in-progress: ${{ github.event_name == 'pull_request' }}
 
 jobs:
-  ci:
+  build:
     runs-on: ubuntu-latest
 
     env:
@@ -41,10 +41,13 @@ jobs:
       - name: Download Dependencies
         run: sbt update
 
+      - name: test:compile
+        run: sbt test:compile
+
       - name: Run Tests and Generate Coverage Report
-        run: sbt coverage test coverageReport
+        run: sbt test coverage coverageReport
 
       - name: Upload Coverage to Codacy
         uses: codacy/codacy-coverage-reporter-action@v1
         with:
-          api-token: ${{ secrets.CODACY_API_TOKEN }}
+          project-token: ${{ secrets.CODACY_PROJECT_TOKEN }}

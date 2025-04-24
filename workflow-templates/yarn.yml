@@ -30,7 +30,7 @@ jobs:
       - name: Cache NPM
         uses: octanner/cache-action@v1
         with:
-          package-manager: "npm"
+          package-manager: "yarn"
 
       - name: Setup Node
         uses: actions/setup-node@v4
@@ -47,7 +47,10 @@ jobs:
       # Use a dedicate step for installing dependencies
       # This makes troubleshooting caching easier
       - name: Install Dependencies
-        run: npm install
+        run: yarn install
+
+      - name: build
+        run: yarn build
 
       - name: Run Tests
-        run: npm run test
+        run: yarn test

@@ -11,12 +11,50 @@ concurrency:
   cancel-in-progress: ${{ github.event_name == 'pull_request' }}
 
 jobs:
-  ci:
+  graphql:
+    runs-on: ubuntu-latest
+
+    steps:
+      - uses: actions/checkout@v4
+
+      - name: Check the subgraph against the graphql-gateway
+        uses: octanner/graphqlgateway-actions/subgraph-check@v1
+        with:
+          apollo-key: "${{ secrets.OCT_VAULT_APOLLOSTUDIO_CCGATEWAY_KEY }}"
+          schema-file: "./src/main/resources/graphql/schema.graphqls"
+          subgraph-name: ""
+
+  build:
     runs-on: ubuntu-latest
 
     env:
       OCT_VAULT_SHARED_READ_ARTIFACTORY_PASSWORD: ${{ secrets.OCT_VAULT_SHARED_READ_ARTIFACTORY_PASSWORD }}
       OCT_VAULT_SHARED_READ_ARTIFACTORY_USERNAME: ${{ secrets.OCT_VAULT_SHARED_READ_ARTIFACTORY_USERNAME }}
+
+    services:
+      postgres:
+        image: postgres:16-alpine
+        env:
+          POSTGRES_HOST_AUTH_METHOD: trust
+          POSTGRES_USER: postgres
+        # Set health checks to wait until postgres has started
+        options: >-
+          --health-cmd pg_isready
+          --health-interval 10s
+          --health-timeout 5s
+          --health-retries 5
+        ports:
+          - 5432:5432
+      redis:
+        image: redis:5-alpine
+        # Set health check to wait until redis has started
+        options: >-
+          --health-cmd "redis-cli ping"
+          --health-interval 10s
+          --health-timeout 5s
+          --health-retries 5
+        ports:
+          - 6379:6379
 
     steps:
       - name: Checkout Code
@@ -35,13 +73,28 @@ jobs:
 
       # Use a dedicate step for installing dependencies
       # This makes troubleshooting caching easier
-      - name: Install Dependencies
-        run: mvn dependency:go-offline -s settings.xml
+      - name: Install dependencies
+        run: ./mvnw dependency:go-offline -s settings.xml
 
-      - name: Run Tests and Generate Coverage Report
-        run: mvn package -s settings.xml
+      - name: compile
+        run: ./mvnw compile -s settings.xml
 
-      - name: Upload Surefire Reports
+      - name: fmt:check
+        run: ./mvnw fmt:check -s settings.xml
+
+      - name: checkstyle:check
+        run: ./mvnw checkstyle:check -s settings.xml
+
+      - name: spotbugs:check
+        run: ./mvnw spotbugs:check -s settings.xml
+
+      - name: pmd:check
+        run: ./mvnw pmd:check -s settings.xml
+
+      - name: test
+        run: ./mvnw test -s settings.xml
+
+      - name: Uploading Artifacts - surefire-reports
         uses: actions/upload-artifact@v4
         with:
           name: surefire-reports
@@ -49,7 +102,7 @@ jobs:
           retention-days: 1
           overwrite: true
 
-      - name: Upload Jacoco Results
+      - name: Uploading Artifacts - jacoco
         uses: actions/upload-artifact@v4
         with:
           name: jacoco
@@ -60,5 +113,4 @@ jobs:
       - name: Upload Coverage to Codacy
         uses: codacy/codacy-coverage-reporter-action@v1
         with:
-          api-token: ${{ secrets.CODACY_API_TOKEN }}
-          coverage-reports: target/site/jacoco/jacoco.xml
+          project-token: ${{ secrets.CODACY_PROJECT_TOKEN }}
