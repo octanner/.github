@@ -59,7 +59,7 @@ jobs:
         run: bundle install
 
       - name: bundler-audit
-        run: bundle exec bundler-audit
+        run: bundle exec bundle audit
 
       - name: brakeman
         run: bundle exec brakeman
