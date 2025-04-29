@@ -60,10 +60,10 @@ jobs:
       - name: Checkout Code
         uses: actions/checkout@v4
 
-      - name: Cache Maven
+      - name: Cache Gradle
         uses: octanner/cache-action@v1
         with:
-          package-manager: "maven"
+          package-manager: "gradle"
 
       - name: Setup Java
         uses: actions/setup-java@v4
