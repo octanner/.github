@@ -96,18 +96,18 @@ jobs:
 
       - name: Uploading Artifacts - surefire-reports
         uses: actions/upload-artifact@v4
+        if: always()  # Run even if tests fail
         with:
           name: surefire-reports
           path: target/surefire-reports/
-          retention-days: 1
           overwrite: true
 
       - name: Uploading Artifacts - jacoco
         uses: actions/upload-artifact@v4
+        if: always()  # Run even if tests fail
         with:
           name: jacoco
           path: target/site/jacoco/
-          retention-days: 1
           overwrite: true
 
       - name: Upload Coverage to Codacy
