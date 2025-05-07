@@ -84,18 +84,18 @@ jobs:
 
       - name: Uploading Artifacts - tests
         uses: actions/upload-artifact@v4
+        if: always()  # Run even if tests fail
         with:
           name: tests
           path: build/reports/tests/test
-          retention-days: 1
           overwrite: true
 
       - name: Uploading Artifacts - jacoco
         uses: actions/upload-artifact@v4
+        if: always()  # Run even if tests fail
         with:
           name: jacoco
           path: build/reports/jacoco/test/html
-          retention-days: 1
           overwrite: true
 
       - name: Upload Coverage to Codacy
