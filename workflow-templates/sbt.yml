@@ -45,7 +45,7 @@ jobs:
         run: sbt test:compile
 
       - name: Run Tests and Generate Coverage Aggregate
-        run: sbt coverage test coverageAggregate
+        run: sbt coverage test coverageReport coverageAggregate
 
       - name: Upload Coverage to Codacy
         uses: codacy/codacy-coverage-reporter-action@v1
