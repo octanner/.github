@@ -6,6 +6,12 @@ on:
   push:
     branches: [$default-branch]
 
+# Permissions needed for EnricoMi test results publishing
+permissions:
+  contents: read
+  checks: write
+  pull-requests: write
+
 concurrency:
   group: "${{ github.workflow }}-${{ github.ref }}"
   cancel-in-progress: ${{ github.event_name == 'pull_request' }}
@@ -46,6 +52,18 @@ jobs:
 
       - name: Run Tests and Generate Coverage Report and Aggregate
         run: sbt coverage test coverageReport coverageAggregate
+
+      - name: Publish Test Results
+        uses: EnricoMi/publish-unit-test-result-action@v2
+        if: always()  # Run even if tests fail
+        with:
+          files: "target/test-reports/**/*.xml"
+          check_name: "Test Results"
+          comment_mode: always
+          compare_to_earlier_commit: true
+          report_individual_runs: true
+          check_run_annotations: "all tests"
+          job_summary: true
 
       - name: Upload Coverage to Codacy
         uses: codacy/codacy-coverage-reporter-action@v1
