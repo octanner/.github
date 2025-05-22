@@ -19,9 +19,12 @@ jobs:
 
     # These permissions are required to pull organizational level private packages
     # You must grant your repo access from the package
+    # Additional permissions (checks, pull-requests) needed for EnricoMi test results publishing
     permissions:
       contents: read
       packages: read
+      checks: write
+      pull-requests: write
 
     steps:
       - name: Checkout Code
@@ -54,3 +57,15 @@ jobs:
 
       - name: Run Tests
         run: yarn test
+
+      - name: Publish Test Results
+        uses: EnricoMi/publish-unit-test-result-action@v2
+        if: always()  # Run even if tests fail
+        with:
+          files: "./reports/junit/**/*.xml"
+          check_name: "Test Results"
+          comment_mode: always
+          compare_to_earlier_commit: true
+          report_individual_runs: true
+          check_run_annotations: "all tests"
+          job_summary: true
